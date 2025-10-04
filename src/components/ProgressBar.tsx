@@ -10,14 +10,14 @@ interface ProgressBarProps {
 
 export const ProgressBar = ({ icon, value, label, colorClass }: ProgressBarProps) => {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-2">
-        <div className="text-lg">{icon}</div>
-        <span className="text-xs font-medium text-foreground/80">{label}</span>
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
+        <div className="text-base">{icon}</div>
+        <span className="text-[10px] font-semibold text-foreground/70">{label}</span>
       </div>
       <Progress 
         value={value} 
-        className={cn("h-2", colorClass)}
+        className={cn("h-1.5", colorClass)}
       />
     </div>
   );

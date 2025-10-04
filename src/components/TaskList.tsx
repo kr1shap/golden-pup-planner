@@ -22,23 +22,23 @@ export const TaskList = () => {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 h-full flex flex-col">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-foreground/90">Tasks</h3>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+        <h3 className="text-[11px] font-bold text-foreground/90 tracking-wide">TASKS</h3>
+        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10">
           <Plus className="h-3 w-3" />
         </Button>
       </div>
-      <div className="space-y-1.5 max-h-20 overflow-y-auto">
+      <div className="space-y-1.5 overflow-y-auto flex-1 pr-1">
         {tasks.map(task => (
-          <div key={task.id} className="flex items-center gap-2 group">
+          <div key={task.id} className="flex items-center gap-2 group animate-fade-in">
             <Checkbox 
               checked={task.completed}
               onCheckedChange={() => toggleTask(task.id)}
-              className="h-3.5 w-3.5"
+              className="h-3 w-3"
             />
             <span className={cn(
-              "text-xs",
+              "text-[11px] leading-tight",
               task.completed && "line-through text-muted-foreground"
             )}>
               {task.text}

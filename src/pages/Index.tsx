@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Utensils, Droplet } from "lucide-react";
+import { Utensils, Droplet, Brain, BookOpen } from "lucide-react";
 import { ProgressBar } from "@/components/ProgressBar";
 import { TaskList } from "@/components/TaskList";
+import { Button } from "@/components/ui/button";
 import goldenDog from "@/assets/golden-dog.png";
 
 const Index = () => {
@@ -10,9 +11,9 @@ const Index = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-[400px] h-[400px] bg-card rounded-2xl shadow-xl p-5 flex flex-col">
-        {/* Stats Bars */}
-        <div className="space-y-3 mb-4">
+      <div className="w-[400px] h-[400px] bg-card rounded-2xl shadow-xl p-4 flex flex-col gap-3">
+        {/* Stats Bars - Side by Side */}
+        <div className="grid grid-cols-2 gap-3">
           <ProgressBar 
             icon={<Utensils className="w-4 h-4" style={{ color: "hsl(var(--food))" }} />}
             value={foodLevel}
@@ -28,18 +29,34 @@ const Index = () => {
         </div>
 
         {/* Pet Display */}
-        <div className="flex-1 flex items-center justify-center my-2">
-          <div className="relative">
-            <img 
-              src={goldenDog} 
-              alt="Golden dog companion" 
-              className="w-32 h-32 object-contain drop-shadow-lg"
-            />
-          </div>
+        <div className="flex items-center justify-center">
+          <img 
+            src={goldenDog} 
+            alt="Golden dog companion" 
+            className="w-28 h-28 object-contain drop-shadow-lg animate-fade-in"
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button 
+            variant="default" 
+            className="w-full h-9 text-xs font-medium hover-scale"
+          >
+            <Brain className="w-3.5 h-3.5 mr-1.5" />
+            Meditate
+          </Button>
+          <Button 
+            variant="default"
+            className="w-full h-9 text-xs font-medium hover-scale"
+          >
+            <BookOpen className="w-3.5 h-3.5 mr-1.5" />
+            Learning
+          </Button>
         </div>
 
         {/* Task List */}
-        <div className="mt-auto">
+        <div className="flex-1 min-h-0">
           <TaskList />
         </div>
       </div>
