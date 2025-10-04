@@ -11,29 +11,13 @@ const Index = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-[400px] h-[400px] bg-card rounded-2xl shadow-xl p-4 flex flex-col gap-3">
-        {/* Stats Bars - Side by Side */}
-        <div className="grid grid-cols-2 gap-3">
-          <ProgressBar 
-            icon={<Utensils className="w-4 h-4" style={{ color: "hsl(var(--food))" }} />}
-            value={foodLevel}
-            label="Food"
-            colorClass="[&>div]:bg-[hsl(var(--food))]"
-          />
-          <ProgressBar 
-            icon={<Droplet className="w-4 h-4" style={{ color: "hsl(var(--water))" }} />}
-            value={waterLevel}
-            label="Water"
-            colorClass="[&>div]:bg-[hsl(var(--water))]"
-          />
-        </div>
-
-        {/* Pet Display */}
-        <div className="flex items-center justify-center">
+      <div className="w-[400px] h-[400px] bg-card rounded-2xl shadow-xl p-4 flex flex-col gap-2.5">
+        {/* Pet Display - Top and Biggest */}
+        <div className="flex items-center justify-center pt-1">
           <img 
             src={goldenDog} 
             alt="Golden dog companion" 
-            className="w-28 h-28 object-contain drop-shadow-lg animate-fade-in"
+            className="w-40 h-40 object-contain drop-shadow-lg animate-fade-in"
           />
         </div>
 
@@ -53,6 +37,22 @@ const Index = () => {
             <BookOpen className="w-3.5 h-3.5 mr-1.5" />
             Learning
           </Button>
+        </div>
+
+        {/* Stats Bars - Below Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <ProgressBar 
+            icon={<Utensils className="w-4 h-4" style={{ color: "hsl(var(--food))" }} />}
+            value={foodLevel}
+            label="Food"
+            colorClass="[&>div]:bg-[hsl(var(--food))]"
+          />
+          <ProgressBar 
+            icon={<Droplet className="w-4 h-4" style={{ color: "hsl(var(--water))" }} />}
+            value={waterLevel}
+            label="Water"
+            colorClass="[&>div]:bg-[hsl(var(--water))]"
+          />
         </div>
 
         {/* Task List */}
