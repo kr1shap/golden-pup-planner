@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Study Tutor</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for custom theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#4285F4',
+                        'bg-light': '#F7F9FA',
+                        'card-bg': '#FFFFFF',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for the output area */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #d1d5db; /* gray-300 */
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-bg-light min-h-screen p-4 sm:p-8 font-sans">
+
+    <!-- Main Container -->
+    <div class="max-w-3xl mx-auto">
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">
+            <span class="text-primary-blue">Voice</span> Study Tutor
+        </h1>
+        <p class="text-center text-gray-600 mb-8">
+            Click Record, ask your question, then click Send.
+        </p>
+
+        <!-- API Key Input (Crucial for client-side fetch) -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow mb-6">
+            <div class="flex items-center">
+                <svg class="h-6 w-6 text-yellow-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p class="text-sm text-yellow-800 font-medium">
+                    Please ensure your Gemini API Key is loaded via the environment.
+                    The code uses a placeholder for security.
+                </p>
+            </div>
+        </div>
+
+        <!-- Tutor Interface Card -->
+        <div class="bg-card-bg p-6 sm:p-8 rounded-2xl shadow-xl space-y-6">
+
+            <!-- Control Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                
+                <button id="recordButton" class="w-full sm:w-1/2 p-3 text-lg font-semibold rounded-xl transition-all shadow-md focus:outline-none focus:ring-4 focus:ring-primary-blue/50 bg-primary-blue text-white hover:bg-primary-blue/90 disabled:bg-gray-400 disabled:shadow-none" onclick="startRecording()">
+                    <span id="recordText">Start Recording</span>
+                </button>
+
+                <button id="sendButton" class="w-full sm:w-1/2 p-3 text-lg font-semibold rounded-xl transition-all shadow-md focus:outline-none focus:ring-4 focus:ring-green-600/50 bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-400 disabled:shadow-none" disabled onclick="sendAudioToGemini()">
+                    Send to Tutor
+                </button>
+            </div>
+            
+            <!-- Status Display -->
+            <div id="statusMessage" class="h-8 text-center text-sm font-medium text-gray-600">
+                Awaiting input...
+            </div>
+
+            <!-- Recorded Audio Playback (for verification) -->
+            <div id="audioControls" class="hidden">
+                <h3 class="text-md font-semibold text-gray-700 mb-2">Your Recorded Speech:</h3>
+                <audio id="audioPlayer" controls class="w-full rounded-lg"></audio>
+            </div>
+
+            <!-- Response Output -->
+            <div class="mt-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-3">AI Tutor Response:</h2>
+                <div id="responseOutput" class="min-h-[150px] p-4 bg-bg-light border border-gray-200 rounded-xl text-gray-800 whitespace-pre-wrap custom-scroll overflow-y-auto">
+                    The tutor's explanation and comprehension check will appear here.
+                </div>
+            </div>
+        </div>
+    </div> 
+
+    <script>
+        // Use the globally available API key placeholder. If not set, it's an empty string.
+        const apiKey = 'AIzaSyDV4ZkoQ4o_jK_YXNFtpStHaL-te-qpxBQ';
+        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=' + apiKey;
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob = null;
+        let recording = false;
+
+        const recordButton = document.getElementById('recordButton');
+        const sendButton = document.getElementById('sendButton');
+        const statusMessage = document.getElementById('statusMessage');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioControls = document.getElementById('audioControls');
+        const responseOutput = document.getElementById('responseOutput');
+         // Function to initiate a download
+            function downloadJson(data) {
+                const json = JSON.stringify({
+                    response: data,
+                    timestamp: new Date().toISOString()
+                }, null, 2); // Format JSON nicely
+
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'tutor_response_' + Date.now() + '.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url); // Clean up
+            }
+        const TUTOR_SYSTEM_INSTRUCTION = (
+            "You are a supportive study tutor. Your job is to explain concepts clearly, " +
+            "then check understanding with short questions. Always follow this cycle: " +
+            "1. Explain the concept in simple, clear steps (avoid long monologues). " +
+            "2. Ask a comprehension question to confirm understanding. " +
+            "3. If the user's answer is incomplete or wrong, re-explain in simpler terms with an example. " +
+            "4. Keep a friendly, encouraging tone."
+        );
+
+        /**
+         * Converts a Blob object (like the recorded audio) to a Base64 string.
+         * @param {Blob} blob The audio blob to convert.
+         * @returns {Promise<string>} The Base64 encoded data string.
+         */
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    // Remove the header (e.g., "data:audio/webm;codecs=opus;base64,")
+                    const base64Data = reader.result.split(',')[1];
+                    resolve(base64Data);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        /**
+         * Starts or stops the microphone recording.
+         */
+        async function startRecording() {
+            if (recording) {
+                // STOP RECORDING
+                mediaRecorder.stop();
+                recording = false;
+                recordButton.textContent = 'Start Recording';
+                recordButton.classList.remove('bg-red-500', 'hover:bg-red-600');
+                recordButton.classList.add('bg-primary-blue', 'hover:bg-primary-blue/90');
+                sendButton.disabled = false;
+                statusMessage.textContent = 'Recording stopped. Ready to send.';
+                return;
+            }
+
+            // START RECORDING
+            try {
+                // Access microphone
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Use 'audio/webm' as it is widely supported and efficient
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    // Create the final audio Blob
+                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    // Display the audio controls
+                    const audioURL = URL.createObjectURL(audioBlob);
+                    audioPlayer.src = audioURL;
+                    audioControls.classList.remove('hidden');
+
+                    // Stop mic access (important to release resource)
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                recording = true;
+                recordButton.textContent = 'Stop Recording';
+                recordButton.classList.remove('bg-primary-blue', 'hover:bg-primary-blue/90');
+                recordButton.classList.add('bg-red-500', 'hover:bg-red-600');
+                sendButton.disabled = true; // Disable send while recording
+                statusMessage.textContent = 'Recording... Speak now.';
+                responseOutput.textContent = '...';
+                audioControls.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Error accessing microphone:", error);
+                statusMessage.textContent = 'ERROR: Could not access microphone. Check permissions.';
+            }
+        }
+
+        /**
+         * Sends the recorded audio and system prompt to the Gemini API.
+         */
+        async function sendAudioToGemini() {
+            if (!audioBlob) {
+                statusMessage.textContent = 'Please record audio first.';
+                return;
+            }
+            if (!apiKey) {
+                statusMessage.textContent = 'ERROR: API Key is required to send data.';
+                return;
+            }
+
+            sendButton.disabled = true;
+            recordButton.disabled = true;
+            statusMessage.textContent = 'Sending audio to AI...';
+            responseOutput.textContent = 'Processing speech and generating response...';
+
+            try {
+                const base64Audio = await blobToBase64(audioBlob);
+
+                // --- API Payload Construction ---
+                // The contents array contains two parts: the system instruction (text)
+                // and the user's speech (inlineData/Base64 audio).
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: TUTOR_SYSTEM_INSTRUCTION },
+                            {
+                                inlineData: {
+                                    mimeType: audioBlob.type,
+                                    data: base64Audio
+                                }
+                            }
+                        ]
+                    }],
+                    // Using systemInstruction for better control of the model's persona
+                    systemInstruction: {
+                        parts: [{ text: TUTOR_SYSTEM_INSTRUCTION }]
+                    }
+                };
+
+                const response = await fetchWithBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                let generatedText = 'Error: No response generated.';
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    generatedText = candidate.content.parts[0].text;
+                    statusMessage.textContent = 'Response received successfully!';
+                    downloadJson(generatedText); 
+                } else {
+                    console.error("API Response Error:", result);
+                    generatedText = `Error: Could not get a valid response. Check console for details. ${result.error?.message || ''}`;
+                    statusMessage.textContent = 'API Error occurred.';
+                }
+                
+                responseOutput.textContent = generatedText;
+
+            } catch (error) {
+                console.error("Fetch or processing failed:", error);
+                statusMessage.textContent = `CRITICAL ERROR: ${error.message}`;
+                responseOutput.textContent = 'Failed to communicate with the API.';
+
+            // ... inside sendAudioToGemini() function, after generatedText is set ...
+            if (generatedText && !generatedText.startsWith('Error:')) {
+                responseOutput.textContent = generatedText;
+                downloadJson(generatedText); // <-- ADD THIS LINE to download the file
+            }
+            } finally {
+                sendButton.disabled = false;
+                recordButton.disabled = false;
+            }
+        }
+        
+        /**
+         * Generic fetch wrapper with exponential backoff for robustness.
+         */
+        async function fetchWithBackoff(url, options, retries = 5, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        return response;
+                    }
+                    if (response.status === 429 && i < retries - 1) { // Rate limit
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; // Exponential backoff
+                        continue;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                } catch (error) {
+                    if (i === retries - 1) throw error; // Throw after final retry
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+        }
+        
+        // Initial state setup
+        window.onload = () => {
+            statusMessage.textContent = 'Click "Start Recording" to begin.';
+        };
+
+    </script>
+</body>
+</html>

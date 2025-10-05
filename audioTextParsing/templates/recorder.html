@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <button id="recordButton">Start Recording</button>
+    <button id="sendButton" disabled>Send</button>
+    <audio id="audioPlayer" controls></audio>
+    <div id="statusMessage"></div>
+    <script>
+      let mediaRecorder, audioChunks = [], audioBlob, recording = false;
+      const recordButton = document.getElementById('recordButton');
+      const sendButton = document.getElementById('sendButton');
+      const audioPlayer = document.getElementById('audioPlayer');
+      const statusMessage = document.getElementById('statusMessage');
+
+      recordButton.onclick = async function() {
+        if (recording) {
+          mediaRecorder.stop();
+          recording = false;
+          recordButton.textContent = 'Start Recording';
+          sendButton.disabled = false;
+          statusMessage.textContent = 'Recording stopped. Ready to send.';
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+          audioChunks = [];
+          mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+          mediaRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            audioPlayer.src = URL.createObjectURL(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
+          };
+          mediaRecorder.start();
+          recording = true;
+          recordButton.textContent = 'Stop Recording';
+          sendButton.disabled = true;
+          statusMessage.textContent = 'Recording... Speak now.';
+        } catch (error) {
+          statusMessage.textContent = 'ERROR: Could not access microphone.';
+        }
+      };
+
+      sendButton.onclick = async function() {
+        if (!audioBlob) return;
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recording.webm');
+        await fetch('http://localhost:3000/upload', { method: 'POST', body: formData });
+        statusMessage.textContent = 'Audio sent!';
+      };
+    </script>
+  </body>
+</html>
