@@ -1,0 +1,40 @@
+{
+    "manifest_version": 3,
+    "name": "Golden Pup Planner",
+    "version": "1.0.0",
+    "description": "A productivity Chrome extension with a virtual golden dog companion. Complete tasks to keep your pet happy and healthy!",
+    "permissions": [
+        "tabs",
+        "storage",
+        "activeTab"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "action": {
+        "default_popup": "index.html",
+        "default_title": "Golden Pup Planner"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "assets/*",
+                "data.json"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ]
+}

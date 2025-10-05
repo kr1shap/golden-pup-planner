@@ -37,7 +37,7 @@ All colors MUST be HSL.
     --ring: 210 100% 50%;
 
     --radius: 0.75rem;
-    
+
     --food: 25 95% 53%;
     --water: 200 100% 50%;
 
@@ -86,7 +86,7 @@ All colors MUST be HSL.
     --border: 215 28% 25%;
     --input: 215 28% 25%;
     --ring: 210 100% 55%;
-    
+
     --food: 25 95% 58%;
     --water: 200 100% 55%;
     --sidebar-background: 240 5.9% 10%;
@@ -114,4 +114,17 @@ All colors MUST be HSL.
   .hover-scale {
     @apply transition-transform duration-200 hover:scale-105;
   }
+}
+
+body {
+  width: 600px;
+  min-height: 400px;
+  margin: 0;
+  padding: 10;
+  overflow-x: auto;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
 }
